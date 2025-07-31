@@ -7,12 +7,40 @@ let sketchStarted = false;
 let anaglyph;
 let is3D = false; // Toggle for 3D mode
 
+// Regeneration feedback
+let regenerationTimer = 0;
+let showRegenerationMsg = false;
+
 let clr1, clr1A, clr1B;
 let clr1Num, clr1Blk = 1000,
   clr1Cnt = -1;
 let clr2Num, clr2Blk = 100,
   clr2Cnt = -1;
 let clr1Len;
+
+function regenerateStructure() {
+  // Regenerate all the random parameters for a new structure
+  a = random(10, 200);
+  b = random(10, 200);
+  c = random(10, 200);
+  d = random(500, 1000);
+  e = random(500, 1000);
+  f = random(10, 50);
+  g = random(500, width*2);
+  h = random(500, width*2);
+  
+  // Reset cumulative FFT for fresh audio response
+  cumulativefft = 0;
+  
+  // Regenerate color tables with new parameters
+  setColourTables();
+  
+  // Show regeneration feedback
+  showRegenerationMsg = true;
+  regenerationTimer = millis();
+  
+  console.log("Structure regenerated!");
+}
 
 function setColourTables() {
   clr1A = [];
@@ -51,14 +79,14 @@ function setup() {
   y = height / 2;
   y2 = height / 2
   rectMode(CENTER);
-  a = random(10, 600);
-  b = random(10, 600);
-  c = random(10, 600);
-  d = random(10, 600);
-  e = random(10, 600);
-  f = random(3, 50);
-  g = random(500, width*3);
-  h = random(500, width*3);
+  a = random(10, 200);
+  b = random(10, 200);
+  c = random(10, 200);
+  d = random(1000, 3000);
+  e = random(500, 1000);
+  f = random(10, 100);
+  g = random(100, width*2);
+  h = random(100, width);
 
   clr1 = [[255, 107, 53], [247, 197, 159], [0, 78, 137], [26, 101, 158]];
   clr1Len = clr1.length;
@@ -73,9 +101,9 @@ function setup() {
 
 function draw() {
   if (!sketchStarted) {
-    background(255);
+    // background(255);
     fill(0);
-    text('Click to start\nPress \'3\' to toggle 3D anaglyph mode', 0, 0);
+    text('Click to start\nPress \'3\' to toggle 3D anaglyph mode\nClick again to regenerate structure', 0, 0);
     return;
   }
   let amp = mic.getLevel();
@@ -100,6 +128,20 @@ function draw() {
     text('3D MODE ON\n(Red-Cyan Glasses)', 0, 0);
     pop();
   }
+  
+  // Show regeneration message temporarily
+  if (showRegenerationMsg && millis() - regenerationTimer < 2000) {
+    push();
+    translate(width/2 - 150, -height/2 + 50, 1000);
+    fill(0, 255, 0);
+    noStroke();
+    textAlign(RIGHT, TOP);
+    textSize(16);
+    text('STRUCTURE\nREGENERATED!', 0, 0);
+    pop();
+  } else if (millis() - regenerationTimer >= 2000) {
+    showRegenerationMsg = false;
+  }
 }
 
 function scene(pg) {
@@ -108,7 +150,7 @@ function scene(pg) {
   
   // camera(0, 0, (height / 2.0) / tan(PI / 6.0) * 2, 0, 0, 0, 0, 1, 0);
   canvas.background(255);
-  canvas.scale(1.55)
+  // canvas.scale(1.55)
   // noStroke();
   canvas.stroke(255)
   canvas.strokeWeight(0.3)
@@ -127,7 +169,7 @@ function scene(pg) {
   // pointLight(200, 200, 200, 0, -200, 200);
 
   // left
-  for (let y = -height; y < height; y += f) {
+  for (let y = -height*2; y < height*2; y += f) {
 
     let colorIndex1 = floor(map(y, height / 2, -height / 2, 0, clr1Num - 1));
     if (clr1A[colorIndex1]) {
@@ -135,12 +177,12 @@ function scene(pg) {
     }
 
     // Add dramatic z-depth variation based on y position and audio
-    let zDepth1 = map(y, -height, height, -1500, 1500) + sin(y/100 + cumulativefft/200) * 800;
+    let zDepth1 = map(y, -height*2, height*2, -500, 500) + sin(y/100 + cumulativefft/200) * 80;
 
     canvas.push();
     canvas.translate(0, y, zDepth1)
     canvas.rotateY(y / d + cumulativefft / a)
-    canvas.box(g , 1, 1)
+    canvas.box(g , 3*noise(y/c), 3*noise(y/c))
     canvas.pop();
 
     canvas.push()
@@ -158,22 +200,24 @@ function scene(pg) {
 
   }
 
-  for(let y2 = -height; y2 < height ; y2+=f*2) {
+  for(let y2 = -height*2; y2 < height*2 ; y2+=f) {
 
-    let colorIndex2 = floor(map(y2, height / 2, -height / 2, 0, clr2Num - 1));
+    let colorIndex2 = floor(map(y2, height * 2, -height * 2, 0, clr2Num - 1));
     if (clr1B[colorIndex2]) {
       canvas.fill(0);
     }
 
     // Add even more dramatic z-depth with noise and audio reactivity
-    let zDepth2 = map(y2, -height, height, -2000, 2000) + 
-                  noise(y2/150, cumulativefft/300) * 1500 + 
-                  cos(y2/80 + cumulativefft/150) * 600;
+    let zDepth2 = map(y2, -height*2, height*2, -2000, 2000) + 
+                  noise(y2/150, cumulativefft/300) * 100 + 
+                  cos(y2/80 + cumulativefft/150) * 100;
 
     canvas.push();
     canvas.translate(0, y2, zDepth2)
     canvas.rotateY(y2/e + cumulativefft/b)
-    canvas.box(h/4 , 45*noise(y2/c),3)
+    strokeWeight(0.3)
+    stroke(255)
+    canvas.box(h/2 , 40*noise(y2/c),30)
     canvas.pop();
 
     canvas.push()
@@ -198,6 +242,9 @@ function mousePressed() {
   if (!sketchStarted) {
     userStartAudio();
     sketchStarted = true;
+  } else {
+    // Regenerate structure when sketch is already running
+    regenerateStructure();
   }
 }
 
