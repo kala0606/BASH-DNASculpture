@@ -57,8 +57,8 @@ function setup() {
   d = random(10, 600);
   e = random(10, 600);
   f = random(3, 50);
-  g = random(200, width);
-  h = random(200, width);
+  g = random(500, width*3);
+  h = random(500, width*3);
 
   clr1 = [[255, 107, 53], [247, 197, 159], [0, 78, 137], [26, 101, 158]];
   clr1Len = clr1.length;
